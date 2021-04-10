@@ -11,9 +11,6 @@ MY_PASSWORD = ""
 
 EMOJIES = ["🥰", "🤑", "🏠", "🏘️", "🥳", "💙", "🙌", "🌲", "🌴", "🏛", "🏘", "🏡"]
 
-PREFIX = ["What do you think?", "Follow for more!", "Comment your thoughts", "Get inspired here!",
-          "This one is BEAUTIFUL!"]
-
 HASHTAGS = "#homeinteriors #luxuryliving #luxurioushome #gardendesign" \
            " #homeinspiration #interiordesigners #interiordecoration #interiorandhome" \
            " #gardendecor #designinterior #interiordesigngoals #interiordesignlovers #interiordesigntrends"
@@ -28,18 +25,19 @@ COMMENTS = ['Nice shot! @{}', 'I love your profile! @{}', 'Your feed is an inspi
 
 def get_image_description(image_path):
     """
-    user VGG16 neural-network to get image description. the description will be used to generate better comments.
+    uses VGG16 neural-network to get image description.
+    the description will be used to generate more suited comments.
     :param image_path: media item to get description of
     :return: image description (string)
     """
     im_array = img_to_array(load_img(image_path, color_mode="rgb", target_size=(224, 224)))
     shape = (1,) + im_array.shape
     image_data = preprocess_input(im_array.reshape(shape))
-    model = VGG16()
-    prediction = model.predict(image_data)
+    prediction = VGG16().predict(image_data)
     labels = decode_predictions(prediction)
     labels = [(label[1], label[2]) for label in labels[0]]
-    return labels[0]
+    print("description confident=",labels[0][1])
+    return (labels[0][0]).replace("_", " ")
 
 
 def download_media(username, maximum, media_type):
@@ -66,27 +64,40 @@ def clean_up(dir_name):
         shutil.rmtree(dir_name)
 
 
-def upload_media_helper(media_name):
+def set_image_caption(media_name):
+    """
+    generates an informative image caption
+    :return: an informative image caption
+    """
+    desc = get_image_description(media_name)
+    pre_set_text = [f'What do you think of this {desc}?', f'This {desc} is amazing!',
+                    f'Comment your thoughts on this {desc}', f'this {desc} is Beautiful!',
+                    f'Tag someone who will like this {desc}']
+    creator_credit = media_name.split("/")[0]
+    main_text = random.choice(pre_set_text) + " " + random.choice(EMOJIES)
+    entire_block = f"{main_text}\n" \
+                   f"🙋🏼‍♀ Follow: @{MY_USERNAME}\n" \
+                   f"📣 Credit: @{creator_credit}\n" \
+                   f".\n" \
+                   f".\n" \
+                   f".\n" \
+                   f"{HASHTAGS}"
+    return entire_block
+
+
+def upload_media(media_name):
     """
     a helper method that uses insta-bot module to upload media to instagram account
     :param media_name: media location to upload
     """
     bot = Bot()
     bot.login(username=MY_USERNAME, password=MY_PASSWORD)
-    credit = media_name.split("/")[0]
-    first_line = random.choice(PREFIX) + ' ' + random.choice(EMOJIES)
-    caption = f"{first_line}\n" \
-              f"📣 Credit: @{credit}\n \
-               🙋🏼‍♀ Follow @{MY_USERNAME}" \
-              f".\n" \
-              f".\n" \
-              f".\n" \
-              f"{HASHTAGS}"
+    caption = set_image_caption(media_name)
     print(f"uploading {media_name}")
     bot.upload_photo(media_name, caption)
 
 
-def upload_media(username, amount, media_type):
+def download_upload_media(username, amount, media_type):
     """
     uploads media to instagram account
     :param username: your username
@@ -97,7 +108,7 @@ def upload_media(username, amount, media_type):
     clean_up("config")
     file_names = os.listdir(username)
     media_to_upload = [item for item in file_names if item.endswith(".jpg")][1]  # without profile pic
-    upload_media_helper(username + "/" + media_to_upload)
+    upload_media(username + "/" + media_to_upload)
     clean_up(username)
 
 
@@ -129,10 +140,11 @@ def daily_task(iterations, num_media_items, media_type):
     3. set likes and follows
     """
     todays_username = random.choice(USERNAMES)
-    upload_media(todays_username, num_media_items, media_type)
+    download_upload_media(todays_username, num_media_items, media_type)
     for i in range(iterations):
         engage()
 
 
 if __name__ == '__main__':
-    daily_task(5, 3, 'image')
+    # daily_task(5, 3, 'image')
+    print(set_image_caption("Capture.JPG"))
