@@ -1,13 +1,11 @@
-import random
-import shutil
+import random, shutil, os
 from instabot import Bot
-import os
 from instapy import InstaPy, smart_run
 
 from tensorflow.keras.applications.vgg16 import preprocess_input, decode_predictions, VGG16
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 
-# TODO: set those:
+# TODO: set username and password
 MY_USERNAME = ""
 MY_PASSWORD = ""
 
@@ -121,19 +119,20 @@ def engage():
         session.like_by_tags(two_random_hashtags, amount=100)
 
 
-def daily_task():
+def daily_task(iterations, num_media_items, media_type):
     """
+    :param media_type: media type to upload
+    :param num_media_items: number of media items to upload
+    :param iterations: set engage loop iterations
     1. downloads content
     2. uploads content to instagram
     3. set likes and follows
     """
     todays_username = random.choice(USERNAMES)
-    todays_amount = 2
-    upload_media(todays_username, todays_amount, 'image')
-    engage()
+    upload_media(todays_username, num_media_items, media_type)
+    for i in range(iterations):
+        engage()
 
 
 if __name__ == '__main__':
-    upload_media(random.choice(USERNAMES), 2, 'image')
-    for i in range(5):
-        engage()
+    daily_task(5, 3, 'image')
